@@ -5,10 +5,14 @@ let selectedRecord = null;
 // Tab View Navigation
 document.querySelectorAll('.nav-tab').forEach(tab => {
   tab.addEventListener('click', () => {
-    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(t => {
+      t.classList.remove('active');
+      t.setAttribute('aria-selected', 'false');
+    });
     document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
     
     tab.classList.add('active');
+    tab.setAttribute('aria-selected', 'true');
     const targetView = tab.getAttribute('data-view');
     document.getElementById(`view-${targetView}`).classList.add('active');
   });
@@ -62,19 +66,29 @@ async function fetchBankHealth() {
 }
 
 // Chaos Mode Toggle
-document.getElementById('chaosToggleBtn').addEventListener('click', () => {
+const chaosPill = document.getElementById('chaosToggleBtn');
+chaosPill.addEventListener('click', () => {
   chaosModeActive = !chaosModeActive;
-  const pill = document.getElementById('chaosToggleBtn');
-  const label = pill.querySelector('.chaos-label');
+  const label = chaosPill.querySelector('.chaos-label');
   
   if (chaosModeActive) {
-    pill.classList.add('active');
+    chaosPill.classList.add('active');
+    chaosPill.setAttribute('aria-checked', 'true');
     label.innerHTML = 'Chaos: <strong>ACTIVE</strong>';
     appendLogEntry('> [CHAOS WARNING]: 429 Rate Limits & Network Jitter injection active.', 'system');
   } else {
-    pill.classList.remove('active');
+    chaosPill.classList.remove('active');
+    chaosPill.setAttribute('aria-checked', 'false');
     label.innerHTML = 'Chaos: <strong>OFF</strong>';
     appendLogEntry('> [CHAOS RESTORED]: Standard production routes restored.', 'system');
+  }
+});
+
+// Keyboard Accessibility for Chaos Switch
+chaosPill.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault();
+    chaosPill.click();
   }
 });
 
@@ -86,7 +100,7 @@ document.getElementById('runBatchBtn').addEventListener('click', async () => {
   btn.disabled = true;
   btn.innerText = "Processing...";
   statusEl.innerText = "STREAMING";
-  statusEl.style.color = "var(--amber)";
+  statusEl.className = "value code-font amber-text";
 
   try {
     const res = await fetch('http://localhost:8000/api/run-batch', { method: 'POST' });
@@ -95,14 +109,14 @@ document.getElementById('runBatchBtn').addEventListener('click', async () => {
     renderDashboard(currentRecords);
     updateAnalytics(currentRecords);
     statusEl.innerText = "ACTIVE";
-    statusEl.style.color = "var(--emerald)";
+    statusEl.className = "value code-font";
   } catch (err) {
     alert("Backend connection error. Ensure FastAPI server is running on http://localhost:8000");
     statusEl.innerText = "ERR_OFFLINE";
-    statusEl.style.color = "var(--ruby)";
+    statusEl.className = "value code-font";
   } finally {
     btn.disabled = false;
-    btn.innerText = "Run Batch";
+    btn.innerText = "Execute Recovery Batch";
   }
 });
 
@@ -181,16 +195,23 @@ function renderDashboard(records) {
     if (rec.action === 'ALTERNATIVE_UPI_NUDGE') badgeClass = 'badge-nudge';
 
     const row = document.createElement('tr');
+    row.setAttribute('tabindex', '0');
     row.innerHTML = `
-      <td style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-muted);">${rec.transaction_id}</td>
-      <td style="font-weight: 500;">${rec.customer_name}</td>
-      <td style="font-family: 'JetBrains Mono', monospace; font-feature-settings: 'tnum';">₹${rec.original_amount.toFixed(2)}</td>
-      <td style="font-size: 11px; color: var(--text-muted);">${rec.category}</td>
+      <td class="cell-txnid">${rec.transaction_id}</td>
+      <td class="cell-customer">${rec.customer_name}</td>
+      <td class="cell-amount">₹${rec.original_amount.toFixed(2)}</td>
+      <td class="cell-category">${rec.category}</td>
       <td><span class="badge ${badgeClass}">${rec.action}</span></td>
-      <td style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--amber);">${(rec.confidence_score * 100).toFixed(0)}%</td>
+      <td class="cell-confidence">${(rec.confidence_score * 100).toFixed(0)}%</td>
     `;
     
     row.addEventListener('click', () => openHitlModal(rec, idx));
+    row.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openHitlModal(rec, idx);
+      }
+    });
     tbody.appendChild(row);
 
     const traceBlock = document.createElement('div');
@@ -228,7 +249,6 @@ function updateAnalytics(records) {
     document.getElementById('bar4').style.width = `${(stopped / total) * 100}%`;
   }
 
-  // Multi-rail aggregation
   let upi = 0, mandate = 0, card = 0, netbanking = 0;
   records.forEach(r => {
     const m = (r.payment_method || '').toLowerCase();
@@ -255,6 +275,7 @@ function openHitlModal(record, index) {
   document.getElementById('modalAiCopy').value = record.customer_message || 'No proactive nudge dispatched (Silent retry window active).';
 
   document.getElementById('hitlModal').classList.add('open');
+  document.getElementById('closeModalBtn').focus();
 }
 
 function closeHitlModal() {
@@ -264,6 +285,16 @@ function closeHitlModal() {
 
 document.getElementById('closeModalBtn').addEventListener('click', closeHitlModal);
 document.getElementById('cancelModalBtn').addEventListener('click', closeHitlModal);
+
+// Close modal on Escape key press
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const modal = document.getElementById('hitlModal');
+    if (modal && modal.classList.contains('open')) {
+      closeHitlModal();
+    }
+  }
+});
 
 document.getElementById('approveDispatchBtn').addEventListener('click', async () => {
   if (!selectedRecord) return;

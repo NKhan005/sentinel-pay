@@ -355,6 +355,10 @@ body {
   padding: 14px 16px;
 }
 
+.card-panel {
+  padding: 14px 16px;
+}
+
 .card.glow-amber {
   border-color: var(--border-amber);
   box-shadow: 0 0 20px rgba(245, 166, 35, 0.05);
@@ -506,6 +510,33 @@ tr:hover td {
   text-align: center;
   padding: 36px;
   color: var(--text-sub);
+}
+
+/* Utility Cell Styles for Clean Rendering Without Inline CSS */
+.cell-txnid {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.cell-customer {
+  font-weight: 500;
+}
+
+.cell-amount {
+  font-family: 'JetBrains Mono', monospace;
+  font-feature-settings: "tnum";
+}
+
+.cell-category {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.cell-confidence {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--amber);
 }
 
 .badge {
@@ -857,4 +888,26 @@ tr:hover td {
   justify-content: flex-end;
   gap: 10px;
   background: var(--surface-raised);
+}
+
+/* =========================================================
+   WCAG 2.1 AA Accessibility & Keyboard Focus Management
+   ========================================================= */
+:focus-visible {
+  outline: 2px solid var(--amber) !important;
+  outline-offset: 2px !important;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--amber) !important;
+  outline-offset: 2px !important;
+}
+
+[role="switch"]:focus-visible {
+  outline: 2px solid var(--amber) !important;
+  outline-offset: 3px !important;
 }

@@ -170,3 +170,10 @@ def test_dead_letter_queue_quarantine_isolation():
     assert data["quarantined_count"] >= 1
     assert data["records"][0]["transaction_id"] == "txn_dlq_test_101"
     assert data["records"][0]["triage_code"] == "DLQ_MAX_RETRIES_EXCEEDED"
+def test_production_fintech_security_headers():
+    response = client.get("/")
+    assert response.status_code == 200
+    assert response.headers.get("x-content-type-options") == "nosniff"
+    assert response.headers.get("x-frame-options") == "DENY"
+    assert response.headers.get("x-xss-protection") == "1; mode=block"
+    assert "Strict-Transport-Security" in response.headers

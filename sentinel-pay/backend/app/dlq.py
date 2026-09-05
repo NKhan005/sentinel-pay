@@ -1,59 +1,54 @@
-import time
 from typing import List, Dict, Any, Optional
-from pydantic import BaseModel
-
-class QuarantinedRecord(BaseModel):
-    transaction_id: str
-    customer_name: str
-    amount: float
-    payment_method: str
-    error_code: str
-    quarantine_reason: str
-    triage_code: str
-    quarantined_at: float
-    resolution_status: str = "PENDING_MANUAL_REVIEW"
+from datetime import datetime
 
 class DeadLetterQueueManager:
-    """
-    Quarantine engine for unrecoverable payment failures, fraud markers,
-    or exhausted retry thresholds. Guarantees regulatory isolation under RBI guidelines.
-    """
-    def __init__(self, max_buffer_size: int = 500):
-        self._buffer: List[QuarantinedRecord] = []
-        self._max_size = max_buffer_size
+    def __init__(self):
+        self._queue: List[Dict[str, Any]] = []
 
     def push(
         self,
-        transaction_id: str,
-        customer_name: str,
-        amount: float,
-        payment_method: str,
-        error_code: str,
-        quarantine_reason: str,
-        triage_code: str
-    ) -> QuarantinedRecord:
-        record = QuarantinedRecord(
-            transaction_id=transaction_id,
-            customer_name=customer_name,
-            amount=amount,
-            payment_method=payment_method,
-            error_code=error_code,
-            quarantine_reason=quarantine_reason,
-            triage_code=triage_code,
-            quarantined_at=time.time()
-        )
-        self._buffer.insert(0, record)
-        if len(self._buffer) > self._max_size:
-            self._buffer.pop()
-        return record
+        record: Any = None,
+        reason: Optional[str] = None,
+        transaction_id: Optional[str] = None,
+        customer_name: Optional[str] = None,
+        amount: Optional[float] = None,
+        payment_method: Optional[str] = None,
+        error_code: Optional[str] = None,
+        quarantine_reason: Optional[str] = None,
+        triage_code: Optional[str] = None,
+        **kwargs
+    ) -> Dict[str, Any]:
+        # Handle call if passed via record object or via direct kwargs
+        t_id = transaction_id or getattr(record, "transaction_id", "unknown")
+        c_name = customer_name or getattr(record, "customer_name", "unknown")
+        amt = amount if amount is not None else getattr(record, "amount", 0.0)
+        p_method = payment_method or getattr(record, "payment_method", "upi")
+        e_code = error_code or getattr(record, "error_code", "UNKNOWN_FAIL")
+        q_reason = quarantine_reason or reason or "Exceeded retry threshold or failed policy"
+        t_code = triage_code or kwargs.get("triage_code", "DLQ_ISOLATION")
 
-    def list_quarantined(self) -> List[QuarantinedRecord]:
-        return self._buffer
+        item = {
+            "transaction_id": t_id,
+            "customer_name": c_name,
+            "amount": amt,
+            "payment_method": p_method,
+            "error_code": e_code,
+            "quarantine_reason": q_reason,
+            "reason": q_reason,
+            "triage_code": t_code,
+            "quarantined_at": datetime.utcnow().isoformat()
+        }
+        self._queue.append(item)
+        return item
 
-    def count(self) -> int:
-        return len(self._buffer)
+    def get_all(self) -> List[Dict[str, Any]]:
+        return list(self._queue)
+
+    def get_records(self) -> List[Dict[str, Any]]:
+        return list(self._queue)
 
     def clear(self):
-        self._buffer.clear()
+        self._queue.clear()
 
+# Singleton instance
 dlq_manager = DeadLetterQueueManager()

@@ -3,218 +3,202 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SentinelPay | Enterprise AI Revenue Recovery Platform</title>
-  <link rel="stylesheet" href="style.css">
+  <meta name="description" content="SentinelPay - Autonomous Revenue Recovery Engine for Indian Payment Rails">
+  <title>SentinelPay | Enterprise AI Revenue Recovery Engine</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="glow-orb orb-1"></div>
-  <div class="glow-orb orb-2"></div>
+  <div class="glow-orb orb-1" aria-hidden="true"></div>
+  <div class="glow-orb orb-2" aria-hidden="true"></div>
 
-  <div class="layout">
-    <!-- Navigation Bar -->
-    <header class="navbar">
+  <main class="layout" role="main">
+    <!-- Navbar Header -->
+    <header class="navbar" role="banner">
       <div class="brand">
-        <div class="brand-badge">PROT-03</div>
+        <div class="brand-badge" aria-label="System Protocol ID">PROT-03</div>
         <div class="brand-text">
           <h1>SENTINEL<span>PAY</span></h1>
           <p>Autonomous AI Recovery Orchestrator &bull; Razorpay Test Rails</p>
         </div>
       </div>
-      
-      <!-- View Switcher Tabs -->
-      <nav class="tab-nav">
-        <button class="nav-tab active" data-view="live-stream">Live Stream &amp; Telemetry</button>
-        <button class="nav-tab" data-view="analytics">Recovery Funnel Analytics</button>
-        <button class="nav-tab" data-view="policies">Policy &amp; Circuit Breakers</button>
+
+      <nav class="tab-nav" role="tablist" aria-label="Dashboard Views">
+        <button role="tab" aria-selected="true" aria-controls="view-stream" id="tab-stream" class="nav-tab active" data-view="stream">Live Stream & Telemetry</button>
+        <button role="tab" aria-selected="false" aria-controls="view-analytics" id="tab-analytics" class="nav-tab" data-view="analytics">Recovery Funnel Analytics</button>
+        <button role="tab" aria-selected="false" aria-controls="view-policy" id="tab-policy" class="nav-tab" data-view="policy">Policy & Circuit Breakers</button>
       </nav>
 
       <div class="nav-controls">
-        <div class="chaos-pill" id="chaosToggleBtn">
-          <span class="chaos-dot"></span>
+        <div id="chaosToggleBtn" class="chaos-pill" role="switch" aria-checked="false" tabindex="0" title="Toggle 429 & Switch Latency Injection" aria-label="Toggle Chaos Mode">
+          <span class="chaos-dot" aria-hidden="true"></span>
           <span class="chaos-label">Chaos: <strong>OFF</strong></span>
         </div>
-        <a id="exportCsvBtn" href="http://localhost:8000/api/export-audit-csv" target="_blank" rel="noopener noreferrer" class="btn btn-ghost" title="Download RBI Audit Trail CSV">Export Audit (CSV)</a>
-        <button id="simulateWebhookBtn" class="btn btn-ghost">Simulate Webhook</button>
-        <button id="runBatchBtn" class="btn btn-amber">Run Batch</button>
+
+        <a id="exportCsvBtn" href="http://localhost:8000/api/export-audit-csv" target="_blank" rel="noopener noreferrer" class="btn btn-ghost" title="Download RBI Audit Trail CSV" aria-label="Export RBI-compliant Audit CSV">Export Audit (CSV)</a>
+        <button id="simulateWebhookBtn" class="btn btn-ghost" aria-label="Simulate Razorpay Webhook Ingestion">Simulate Webhook</button>
+        <button id="runBatchBtn" class="btn btn-amber" aria-label="Execute 50-Record Batch Run">Execute Recovery Batch</button>
       </div>
     </header>
 
-    <!-- Bank Heatmap Rail -->
-    <section class="bank-heatmap-card">
-      <div class="heatmap-header">
-        <span class="heatmap-title">&bull; Live Indian Payment Switches &amp; Gateway Health</span>
-        <span class="heatmap-status">Auto-Syncing</span>
-      </div>
-      <div class="switch-grid" id="switchGrid">
-        <div class="switch-node"><span class="node-name">Loading Switches...</span></div>
-      </div>
-    </section>
+    <!-- TAB 1: Live Stream & Telemetry -->
+    <section id="view-stream" class="view-panel active" role="tabpanel" aria-labelledby="tab-stream">
+      <!-- Indian Bank Switches Rail -->
+      <section class="bank-heatmap-card" aria-label="Live Bank Switch Health Status">
+        <div class="heatmap-header">
+          <span class="heatmap-title">&bull; Live Indian Payment Switches & Gateway Health</span>
+          <span class="heatmap-status" aria-live="polite">Auto-Syncing</span>
+        </div>
+        <div class="switch-grid" id="switchGrid" aria-label="Payment Switches"></div>
+      </section>
 
-    <!-- VIEW 1: LIVE RECOVERY STREAM & TELEMETRY -->
-    <section id="view-live-stream" class="view-panel active">
-      <!-- Financial Analytics Grid -->
-      <div class="stats-row">
-        <div class="card stat-card">
-          <span class="card-label">Monitored Revenue Loss</span>
+      <!-- Financial Metrics -->
+      <section class="stats-row" aria-label="Financial Recovery Metrics">
+        <div class="card">
+          <div class="card-label">Monitored Revenue Loss</div>
           <div class="card-value-group">
-            <span class="value" id="totalLoss">₹0</span>
+            <div class="value" id="totalLoss" aria-live="polite">₹0.00</div>
             <span class="delta negative" id="failureCountTag">0 Failed Txns</span>
           </div>
-          <div class="card-footer-sub">Ingested across UPI, Mandates &amp; Cards</div>
+          <div class="card-footer-sub">Ingested across UPI, Mandates & Cards</div>
         </div>
 
-        <div class="card stat-card glow-amber">
-          <span class="card-label">Recoverable Capital</span>
+        <div class="card glow-amber">
+          <div class="card-label amber-text">Recoverable Capital</div>
           <div class="card-value-group">
-            <span class="value amber-text" id="recoveredAmount">₹0</span>
-            <span class="delta positive" id="recoveryRateTag">0% Retained</span>
+            <div class="value amber-text" id="recoveredAmount" aria-live="polite">₹0.00</div>
+            <span class="delta positive" id="recoveryRateTag">0.0% Retained</span>
           </div>
-          <div class="card-footer-sub">Active dynamic links &amp; backoff retries</div>
+          <div class="card-footer-sub">Active dynamic dunning & backoff routing</div>
         </div>
 
-        <div class="card stat-card">
-          <span class="card-label">Circuit Breakers Tripped</span>
+        <div class="card">
+          <div class="card-label">Circuit Breakers Tripped</div>
           <div class="card-value-group">
-            <span class="value" id="trippedCount">0</span>
+            <div class="value code-font" id="trippedCount" aria-live="polite">0</div>
             <span class="delta neutral">Anti-Spam Gated</span>
           </div>
           <div class="card-footer-sub">Hard stopping rules enforced</div>
         </div>
 
-        <div class="card stat-card">
-          <span class="card-label">Telemetry Status</span>
+        <div class="card">
+          <div class="card-label">Telemetry Status</div>
           <div class="card-value-group">
-            <span class="value code-font" id="engineStatus">IDLE</span>
-            <span class="status-indicator"></span>
+            <div class="value code-font amber-text" id="engineStatus" aria-live="polite">STANDBY</div>
+            <span class="delta positive">Ready</span>
           </div>
-          <div class="card-footer-sub">Pydantic validation layer: Enforced</div>
+          <div class="card-footer-sub">Hinglish validation layer listener</div>
         </div>
-      </div>
+      </section>
 
-      <!-- Main Mission Control Grid -->
-      <main class="grid-body">
-        <div class="card panel-table">
+      <!-- Decision Stream & Terminal -->
+      <section class="grid-body">
+        <div class="card card-panel">
           <div class="panel-header">
             <h2>Live Streamed Decisions (Click Row for HITL Inspector)</h2>
-            <span class="tag-meta" id="tableRecordCount">0 Records Loaded</span>
+            <span class="tag-meta" id="tableRecordCount" aria-live="polite">0 Records Ingested</span>
           </div>
-          <div class="table-container">
+          <div class="table-container" tabindex="0" aria-label="Live Stream Decisions Table">
             <table id="resultsTable">
               <thead>
                 <tr>
-                  <th>Txn ID</th>
-                  <th>Customer</th>
-                  <th>Amount</th>
-                  <th>Classification</th>
-                  <th>Intervention Action</th>
-                  <th>Confidence</th>
+                  <th scope="col">Txn ID</th>
+                  <th scope="col">Customer</th>
+                  <th scope="col">Amount</th>
+                  <th scope="col">Classification</th>
+                  <th scope="col">Intervention Action</th>
+                  <th scope="col">Confidence</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td colspan="6" class="empty-state">Click <strong>"Run Batch"</strong> to ingest failure stream...</td>
+                  <td colspan="6" class="empty-state">Click "Execute Recovery Batch" to stream failure telemetry events</td>
                 </tr>
               </tbody>
             </table>
           </div>
         </div>
 
-        <div class="card panel-telemetry">
+        <div class="card card-panel">
           <div class="panel-header">
-            <h2>Explainability Engine &amp; Audit Trace</h2>
-            <span class="live-blink">&#9679; LIVE</span>
+            <h2>Explainability Engine & Audit Trace</h2>
+            <span class="live-blink" aria-hidden="true">&bull; LIVE</span>
           </div>
-          <div id="telemetryLog" class="telemetry-terminal">
-            <div class="terminal-line system">&gt; Initializing SentinelPay Core v2.2...</div>
-            <div class="terminal-line system">&gt; Razorpay Test Mode: AUTHENTICATED</div>
-            <div class="terminal-line system">&gt; FinOps LLM Governor: ARMED (Token Bucket)</div>
-            <div class="terminal-line system">&gt; Ready for webhook events or batch execution.</div>
+          <div class="telemetry-terminal" id="telemetryLog" role="log" aria-live="polite" aria-label="Telemetry Audit Terminal" tabindex="0">
+            <div class="terminal-line system">&gt; SentinelPay v2.3 Recovery Engine Standby. Awaiting webhook events...</div>
           </div>
         </div>
-      </main>
+      </section>
     </section>
 
-    <!-- VIEW 2: RECOVERY FUNNEL ANALYTICS -->
-    <section id="view-analytics" class="view-panel">
+    <!-- TAB 2: Recovery Funnel Analytics -->
+    <section id="view-analytics" class="view-panel" role="tabpanel" aria-labelledby="tab-analytics">
       <div class="analytics-grid">
-        <div class="card funnel-card">
+        <div class="card">
           <div class="panel-header">
-            <h2>End-to-End Recovery Funnel Telemetry</h2>
-            <span class="tag-meta">Calculated Live</span>
+            <h2>Deterministic State Recovery Funnel</h2>
+            <span class="tag-meta">Multi-Stage Classification</span>
           </div>
           <div class="funnel-container">
             <div class="funnel-step">
               <div class="funnel-label-group">
-                <span>1. Ingested Failed Events</span>
-                <strong id="funnelTotal">0 Txns</strong>
+                <span>1. Ingested Failure Webhooks</span>
+                <strong id="funnelTotal">0 Events</strong>
               </div>
-              <div class="progress-track"><div class="progress-bar amber-bar w-full" id="bar1"></div></div>
+              <div class="progress-track"><div class="progress-bar amber-bar w-full"></div></div>
             </div>
             <div class="funnel-step">
               <div class="funnel-label-group">
-                <span>2. Bounded State Machine Classified</span>
-                <strong id="funnelClassified">0 Txns</strong>
+                <span>2. Switch-Health Validated</span>
+                <strong id="funnelClassified">0 Validated</strong>
               </div>
-              <div class="progress-track"><div class="progress-bar amber-bar w-full" id="bar2"></div></div>
+              <div class="progress-track"><div class="progress-bar amber-bar w-full"></div></div>
             </div>
             <div class="funnel-step">
               <div class="funnel-label-group">
-                <span>3. Dynamic Interventions Dispatched (Links / Retries)</span>
-                <strong id="funnelDispatched">0 Interventions</strong>
+                <span>3. Dispatched (Smart Retry / WhatsApp Nudge)</span>
+                <strong id="funnelDispatched">0 Recoveries</strong>
               </div>
               <div class="progress-track"><div class="progress-bar emerald-bar w-zero" id="bar3"></div></div>
             </div>
             <div class="funnel-step">
               <div class="funnel-label-group">
-                <span>4. Circuit Breakers Gated (Harassment Prevention)</span>
-                <strong id="funnelStopped">0 Gated</strong>
+                <span>4. Isolated via Circuit Breaker (Hard Stop)</span>
+                <strong id="funnelStopped">0 Hard Stops</strong>
               </div>
               <div class="progress-track"><div class="progress-bar ruby-bar w-zero" id="bar4"></div></div>
             </div>
           </div>
         </div>
 
-        <div class="card channel-card">
+        <div class="card">
           <div class="panel-header">
-            <h2>Rail-Wise Failure Distribution</h2>
-            <span class="tag-meta">Multi-Rail Breakdown</span>
+            <h2>Rail Failure Breakdown</h2>
+            <span class="tag-meta">Distribution</span>
           </div>
-          <div class="rail-stats-list" id="railBreakdown">
-            <div class="rail-item">
-              <span class="rail-name">UPI Intent / Collect</span>
-              <span class="rail-val" id="upiCount">-</span>
-            </div>
-            <div class="rail-item">
-              <span class="rail-name">Recurring e-Mandates</span>
-              <span class="rail-val" id="mandateCount">-</span>
-            </div>
-            <div class="rail-item">
-              <span class="rail-name">Credit &amp; Debit Cards</span>
-              <span class="rail-val" id="cardCount">-</span>
-            </div>
-            <div class="rail-item">
-              <span class="rail-name">NetBanking Node</span>
-              <span class="rail-val" id="netbankingCount">-</span>
-            </div>
+          <div class="rail-stats-list">
+            <div class="rail-item"><span>UPI / QR Intent Failures</span><span class="rail-val" id="upiCount">0 Failures</span></div>
+            <div class="rail-item"><span>Recurring Mandate Expiries</span><span class="rail-val" id="mandateCount">0 Failures</span></div>
+            <div class="rail-item"><span>Card Network Declines</span><span class="rail-val" id="cardCount">0 Failures</span></div>
+            <div class="rail-item"><span>NetBanking Switch Timeouts</span><span class="rail-val" id="netbankingCount">0 Failures</span></div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- VIEW 3: POLICY & CIRCUIT BREAKER CONFIG -->
-    <section id="view-policies" class="view-panel">
-      <div class="card policy-card">
+    <!-- TAB 3: Policy Configuration -->
+    <section id="view-policy" class="view-panel" role="tabpanel" aria-labelledby="tab-policy">
+      <div class="card">
         <div class="panel-header">
-          <h2>Autonomous Recovery Guardrail Configuration</h2>
-          <span class="tag-meta">Deterministic State Guard</span>
+          <h2>Autonomous Recovery Governor Policies</h2>
+          <span class="tag-meta">RBI Regulatory Constraints</span>
         </div>
         <div class="policy-grid">
           <div class="policy-setting">
-            <label for="sliderMaxRetries" class="setting-title">Max Retry Threshold Before Hard Stop</label>
-            <p class="setting-desc">Enforces anti-spam stopping rules when repeat payment attempts fail.</p>
+            <label for="sliderMaxRetries" class="setting-title">Maximum Retry Frequency (Anti-Harassment Ceiling)</label>
+            <p class="setting-desc">Enforces hard stop circuit breaker on transactions reaching retry ceiling.</p>
             <div class="slider-group">
               <input type="range" id="sliderMaxRetries" min="1" max="5" value="3" class="range-slider">
               <span class="slider-val" id="valMaxRetries">3 Attempts</span>
@@ -222,71 +206,70 @@
           </div>
 
           <div class="policy-setting">
-            <label for="sliderBackoff" class="setting-title">Bank Switch Cooling Window</label>
-            <p class="setting-desc">Silent delay applied during issuer bank switch degradations.</p>
+            <label for="sliderBackoff" class="setting-title">Bank Switch Downtime Cooling Window</label>
+            <p class="setting-desc">Dynamic jittered delay applied when core banking switches report high failure rates.</p>
             <div class="slider-group">
-              <input type="range" id="sliderBackoff" min="15" max="120" step="15" value="45" class="range-slider">
-              <span class="slider-val" id="valBackoff">45 Minutes</span>
+              <input type="range" id="sliderBackoff" min="5" max="60" value="20" class="range-slider">
+              <span class="slider-val" id="valBackoff">20 Minutes</span>
             </div>
           </div>
 
           <div class="policy-setting">
-            <label for="selectChannel" class="setting-title">Primary Contextual Recovery Rail</label>
-            <p class="setting-desc">Default communication channel used for dynamic payment links.</p>
-            <select id="selectChannel" class="policy-select">
-              <option value="WHATSAPP">WhatsApp Direct Intent (High Conversion)</option>
-              <option value="SMS">SMS Priority Fallback</option>
-              <option value="EMAIL">Email Mandate Digest</option>
+            <label for="selectTone" class="setting-title">Hinglish Generative AI Dunning Tone</label>
+            <p class="setting-desc">Sets prompt personality for automated WhatsApp nudges.</p>
+            <select id="selectTone" class="policy-select">
+              <option value="polite">Polite & Empathetic (Recommended)</option>
+              <option value="urgent">Time-Sensitive / Expiring</option>
+              <option value="minimal">Minimal / Link-Only</option>
             </select>
           </div>
         </div>
       </div>
     </section>
-  </div>
+  </main>
 
-  <!-- Human-In-The-Loop Inspector Modal -->
-  <div class="modal-backdrop" id="hitlModal">
+  <!-- HITL Inspector Modal -->
+  <div id="hitlModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <div class="modal-card">
       <div class="modal-header">
         <div class="modal-title">
-          <h3>Human-in-the-Loop Decision Inspector</h3>
-          <span class="modal-txn-id" id="modalTxnId">txn_id</span>
+          <h3 id="modalTitle">Human-in-the-Loop Dunning Inspector</h3>
+          <span class="modal-txn-id" id="modalTxnId">txn_placeholder</span>
         </div>
-        <button class="modal-close" id="closeModalBtn" title="Close">&times;</button>
+        <button id="closeModalBtn" class="modal-close" aria-label="Close Modal">&times;</button>
       </div>
+
       <div class="modal-body">
         <div class="inspector-grid">
           <div class="inspector-field">
             <span class="field-label">Customer Name</span>
-            <span class="field-value" id="modalCustomerName">-</span>
+            <div class="field-value" id="modalCustomerName">-</div>
           </div>
           <div class="inspector-field">
-            <span class="field-label">Phone Contact</span>
-            <span class="field-value" id="modalCustomerPhone">-</span>
+            <span class="field-label">Phone</span>
+            <div class="field-value" id="modalCustomerPhone">-</div>
           </div>
           <div class="inspector-field">
-            <span class="field-label">Failure Classification</span>
-            <span class="field-value amber-text" id="modalCategory">-</span>
+            <span class="field-label">Failure Category</span>
+            <div class="field-value" id="modalCategory">-</div>
           </div>
           <div class="inspector-field">
-            <span class="field-label">Payment Method</span>
-            <span class="field-value" id="modalMethod">-</span>
+            <span class="field-label">Original Payment Rail</span>
+            <div class="field-value" id="modalMethod">-</div>
           </div>
         </div>
 
-        <div class="inspector-section">
-          <span class="field-label">Raw Gateway Error Trace</span>
-          <div class="error-code-box" id="modalRawError">-</div>
-        </div>
+        <div class="error-code-box" id="modalRawError">[RAW_CODE] Description</div>
 
-        <div class="inspector-section">
-          <span class="field-label">Gemini AI Recovery Nudge (Editable Copy)</span>
-          <textarea id="modalAiCopy" class="modal-textarea" rows="3" title="AI Recovery Nudge Copy" placeholder="Edit the generated recovery message here..." aria-label="AI Recovery Message"></textarea>
+        <div>
+          <label for="modalAiCopy" class="field-label">AI Dunning Copy (Merchant Modifiable)</label>
+          <textarea id="modalAiCopy" rows="3" class="modal-textarea" aria-label="AI Dunning Copy"></textarea>
         </div>
       </div>
+
       <div class="modal-footer">
-        <button class="btn btn-ghost" id="cancelModalBtn">Dismiss</button>
-        <button class="btn btn-amber" id="approveDispatchBtn">Approve &amp; Dispatch Intervention</button>
+        <button id="cancelModalBtn" class="btn btn-ghost">Cancel</button>
+        <button id="approveDispatchBtn" class="btn btn-amber">Approve & Dispatch</button>
       </div>
     </div>
   </div>

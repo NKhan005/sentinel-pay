@@ -11,11 +11,12 @@ from app.state_engine import SentinelRecoveryEngine
 from app.bank_health import BankHealthService, BankSwitchStatus
 from app.idempotency import idempotency_engine
 from app.optimizer import channel_optimizer
+from app.dlq import dlq_manager
 
 app = FastAPI(
     title="SentinelPay - Autonomous Revenue Recovery Engine",
     description="Deterministic AI orchestration for payment recovery with full auditability.",
-    version="2.2.0"
+    version="2.3.0"
 )
 
 app.add_middleware(
@@ -24,6 +25,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["Content-Disposition"]
 )
 
 WEBHOOK_SECRET = os.getenv("RAZORPAY_WEBHOOK_SECRET", "sentinel_webhook_secret_2026")
@@ -42,10 +44,11 @@ def verify_razorpay_signature(raw_body: bytes, signature: Optional[str]) -> bool
 def health_check():
     return {
         "status": "operational",
-        "system": "SentinelPay Enterprise Recovery Engine v2.2",
+        "system": "SentinelPay Enterprise Recovery Engine v2.3",
         "idempotency_guard": "ACTIVE",
         "mab_optimizer": "EPSILON_GREEDY",
         "finops_governor": "TOKEN_BUCKET_ACTIVE",
+        "dlq_quarantine": "ACTIVE",
         "environment": "Razorpay Test Rails"
     }
 
@@ -65,6 +68,20 @@ def get_mab_metrics():
             "conversion_rate": f"{rate:.1f}%"
         }
     return stats
+
+@app.get("/api/dlq-records")
+def get_dlq_records():
+    """Returns all quarantined transactions isolated by the circuit breaker."""
+    return {
+        "quarantined_count": dlq_manager.count(),
+        "records": dlq_manager.list_quarantined()
+    }
+
+@app.post("/api/dlq-clear")
+def clear_dlq():
+    """Administrative reset for the quarantine queue."""
+    dlq_manager.clear()
+    return {"status": "cleared"}
 
 @app.get("/api/export-audit-csv")
 def export_audit_csv():

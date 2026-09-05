@@ -23,13 +23,15 @@ document.getElementById('sliderBackoff').addEventListener('input', (e) => {
   document.getElementById('valBackoff').innerText = `${e.target.value} Minutes`;
 });
 
-// Export CSV
-document.getElementById('exportCsvBtn').addEventListener('click', () => {
-  window.location.href = 'http://localhost:8000/api/export-audit-csv';
-  appendLogEntry('> [AUDIT EXPORT]: RBI-compliant dunning trace downloaded successfully.', 'system');
-});
+// Direct Audit CSV Download Logging
+const exportBtn = document.getElementById('exportCsvBtn');
+if (exportBtn) {
+  exportBtn.addEventListener('click', () => {
+    appendLogEntry('> [AUDIT EXPORT]: RBI-compliant dunning trace downloaded successfully.', 'system');
+  });
+}
 
-// Initialize Switches
+// Initialize Switches on Load
 document.addEventListener('DOMContentLoaded', () => {
   fetchBankHealth();
 });

@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.schemas import TransactionRecord, FailureCategory, RecoveryAction
 from app.state_engine import SentinelRecoveryEngine
+from app.dlq import dlq_manager
 
 client = TestClient(app)
 
@@ -142,3 +143,30 @@ def test_export_audit_csv_compliance_endpoint():
     assert response.status_code == 200
     assert "text/csv" in response.headers["content-type"]
     assert "Transaction_ID,Customer_Name,Amount" in response.text
+
+def test_dead_letter_queue_quarantine_isolation():
+    dlq_manager.clear()
+
+    # Trigger a 3-retry record that trips the circuit breaker
+    record = TransactionRecord(
+        transaction_id="txn_dlq_test_101",
+        customer_name="Vikram Seth",
+        customer_phone="+919876543210",
+        amount=5200.0,
+        payment_method="upi",
+        error_code="MAX_RETRIES_EXCEEDED",
+        error_description="Issuer switch rejected repeat debits",
+        retry_count=3,
+        timestamp="2026-08-22T14:00:00Z"
+    )
+    result = SentinelRecoveryEngine.evaluate(record)
+    assert result.action == RecoveryAction.HARD_STOP
+    assert result.stopping_rule_applied is True
+
+    # Verify transaction was isolated in DLQ
+    res = client.get("/api/dlq-records")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["quarantined_count"] >= 1
+    assert data["records"][0]["transaction_id"] == "txn_dlq_test_101"
+    assert data["records"][0]["triage_code"] == "DLQ_MAX_RETRIES_EXCEEDED"

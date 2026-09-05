@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from app.schemas import TransactionRecord, DecisionResult, FailureCategory, RecoveryAction
 from app.razorpay_client import RazorpayClientService
 from app.bank_health import BankHealthService
+from app.dlq import dlq_manager
 
 load_dotenv()
 GEMINI_KEY = os.getenv("GEMINI_API_KEY", "")
@@ -49,24 +50,30 @@ class SentinelRecoveryEngine:
         return FailureCategory.AUTH_EXPIRED
 
     @classmethod
-    def calculate_adaptive_delay(cls, method: str) -> int:
+    def calculate_adaptive_jitter_delay(cls, method: str, attempt: int = 0) -> int:
         """
-        Dynamically adjusts retry cooling window based on live switch degradation.
+        Calculates delay using Decorrelated Full-Jitter Backoff:
+        Prevents thundering-herd retry storms hitting recovering bank switches.
+        Formula: Delay = Uniform(BaseDelay, min(MaxCap, BaseDelay * 2^attempt))
         """
         switches = BankHealthService.get_switch_matrix()
-        # Find matching or fallback switch
         target_switch = next((s for s in switches if s.rail.lower() in method.lower() or s.bank_code in method.upper()), None)
         
-        base_delay = 30
+        base_delay = 20
+        max_cap = 90
+        
         if target_switch:
             if target_switch.status == "DOWNTIME":
-                base_delay = 90
+                base_delay = 45
+                max_cap = 120
             elif target_switch.status == "DEGRADED":
-                base_delay = 60
-        
-        # Add Full Jitter (+/- 10 minutes) to avoid synchronized thundering herd retries
-        jitter = random.randint(-5, 10)
-        return max(15, base_delay + jitter)
+                base_delay = 30
+                max_cap = 90
+
+        # Mathematical Full-Jitter calculation
+        ceiling = min(max_cap, base_delay * (2 ** min(attempt, 2)))
+        jittered_delay = random.randint(base_delay, max(base_delay, ceiling))
+        return jittered_delay
 
     @staticmethod
     def generate_ai_nudge(customer_name: str, amount: float, link: str, reason: str) -> str:
@@ -96,8 +103,19 @@ class SentinelRecoveryEngine:
     def evaluate(cls, record: TransactionRecord) -> DecisionResult:
         category = cls.classify_failure(record)
         
-        # Hard FinTech Guardrail: Max 3 Retries
+        # Hard FinTech Guardrail: Max 3 Retries -> Dead Letter Queue Quarantine
         if record.retry_count >= 3:
+            # Route to DLQ Quarantine Buffer
+            dlq_manager.push(
+                transaction_id=record.transaction_id,
+                customer_name=record.customer_name,
+                amount=record.amount,
+                payment_method=record.payment_method,
+                error_code=record.error_code,
+                quarantine_reason="Exceeded maximum automated retry ceiling (3). Enforced anti-harassment stopping rule.",
+                triage_code="DLQ_MAX_RETRIES_EXCEEDED"
+            )
+
             return DecisionResult(
                 transaction_id=record.transaction_id,
                 customer_name=record.customer_name,
@@ -111,7 +129,7 @@ class SentinelRecoveryEngine:
                 recovery_payment_link=None,
                 customer_message=None,
                 stopping_rule_applied=True,
-                audit_trace="Circuit Breaker: Maximum retry threshold reached (3). Enforced anti-harassment stopping rule under RBI dunning guidelines.",
+                audit_trace="Circuit Breaker: Maximum retry threshold reached (3). Routed to DLQ Quarantine buffer for compliance.",
                 raw_error_code=record.error_code,
                 raw_error_description=record.error_description
             )
@@ -137,9 +155,9 @@ class SentinelRecoveryEngine:
                 raw_error_description=record.error_description
             )
 
-        # Bank Downtime: Dynamic cooling based on Switch Latency & Success Rate
+        # Bank Downtime: Dynamic cooling based on Switch Latency & Full Jitter
         if category == FailureCategory.BANK_DOWNTIME:
-            adaptive_delay = cls.calculate_adaptive_delay(record.payment_method)
+            adaptive_delay = cls.calculate_adaptive_jitter_delay(record.payment_method, record.retry_count)
             return DecisionResult(
                 transaction_id=record.transaction_id,
                 customer_name=record.customer_name,
@@ -153,7 +171,7 @@ class SentinelRecoveryEngine:
                 recovery_payment_link=None,
                 customer_message=None,
                 stopping_rule_applied=False,
-                audit_trace=f"Bank switch degraded. Scheduled adaptive silent backoff with jitter ({adaptive_delay} mins) to avoid thundering herd.",
+                audit_trace=f"Bank switch degraded. Scheduled Decorrelated Full-Jitter backoff ({adaptive_delay} mins) to avoid thundering herd.",
                 raw_error_code=record.error_code,
                 raw_error_description=record.error_description
             )

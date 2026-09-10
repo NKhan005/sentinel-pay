@@ -3,6 +3,7 @@ const API_BASE = 'http://localhost:8000';
 let currentRecords = [];
 let chaosModeActive = false;
 let selectedRecord = null;
+let activePardonTxn = null;
 
 /* Toast Notifications */
 const ICONS = {
@@ -104,6 +105,7 @@ if (exportBtn) {
 document.addEventListener('DOMContentLoaded', () => {
   renderSwitchPlaceholders();
   fetchBankHealth();
+  fetchDlqRecords();
 });
 
 function renderSwitchPlaceholders() {
@@ -206,22 +208,6 @@ if (runBatchBtn) {
       runBatchBtn.innerText = "Execute Recovery Batch";
     }
   });
-}
-
-/* Helper to compute HMAC SHA256 in browser */
-async function computeHmacSha256(secret, message) {
-  const enc = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    "raw",
-    enc.encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"]
-  );
-  const signature = await crypto.subtle.sign("HMAC", key, enc.encode(message));
-  return Array.from(new Uint8Array(signature))
-    .map(b => b.toString(16).padStart(2, "0"))
-    .join("");
 }
 
 /* Webhook Simulation */
@@ -427,11 +413,9 @@ function updateAnalytics(records) {
   }
 }
 
-/* Quarantine Vault */
+/* Quarantine Vault & DLQ */
 async function fetchDlqRecords() {
   const statusEl = document.getElementById('vaultStatus');
-  const listEl = document.getElementById('vaultList');
-
   try {
     const res = await fetch(`${API_BASE}/api/dlq-records`);
     if (!res.ok) throw new Error();
@@ -477,9 +461,19 @@ function renderVault(records) {
       <span class="vault-txn">${r.transaction_id}</span>
       <span class="vault-customer">${r.customer_name}</span>
       <span class="vault-amount">₹${Number(r.amount).toFixed(2)}</span>
-      <span class="vault-reason">Exceeded maximum automated retry ceiling (3). Enforced anti-harassment stopping rule.</span>
-      <span class="vault-code">DLQ_MAX_RETRIES_EXCEEDED</span>
+      <span class="vault-reason">${r.quarantine_reason || 'Exceeded maximum automated retry ceiling (3). Enforced anti-harassment stopping rule.'}</span>
+      <button class="btn-pardon" data-id="${r.transaction_id}" data-name="${r.customer_name}" data-amount="₹${Number(r.amount).toFixed(2)}">Pardon &amp; Dispatch</button>
     `;
+
+    const pardonBtn = it.querySelector('.btn-pardon');
+    pardonBtn.addEventListener('click', () => {
+      openPardonModal({
+        id: r.transaction_id,
+        name: r.customer_name,
+        amount: `₹${Number(r.amount).toFixed(2)}`
+      });
+    });
+
     listEl.appendChild(it);
   });
 }
@@ -530,6 +524,62 @@ if (approveBtn) {
       closeHitlModal();
     } catch (e) {
       showToast('Override dispatch failed.', 'error');
+    }
+  });
+}
+
+/* DLQ Pardon Modal Handlers */
+function openPardonModal(item) {
+  activePardonTxn = item;
+  document.getElementById('pardonTxnIdDisplay').innerText = item.id;
+  document.getElementById('pardonCustomerName').innerText = item.name;
+  document.getElementById('pardonAmount').innerText = item.amount;
+  document.getElementById('pardonReasonInput').value = "Customer confirmed active balance via support; authorized manual 1-click recovery link.";
+  document.getElementById('pardonModal').classList.add('open');
+}
+
+function closePardonModal() {
+  document.getElementById('pardonModal').classList.remove('open');
+  activePardonTxn = null;
+}
+
+const closePardonBtn = document.getElementById('closePardonModalBtn');
+if (closePardonBtn) closePardonBtn.addEventListener('click', closePardonModal);
+
+const cancelPardonBtn = document.getElementById('cancelPardonBtn');
+if (cancelPardonBtn) cancelPardonBtn.addEventListener('click', closePardonModal);
+
+const confirmPardonBtn = document.getElementById('confirmPardonBtn');
+if (confirmPardonBtn) {
+  confirmPardonBtn.addEventListener('click', async () => {
+    if (!activePardonTxn) return;
+    const reason = document.getElementById('pardonReasonInput').value;
+    confirmPardonBtn.disabled = true;
+    confirmPardonBtn.innerText = "Authorizing...";
+
+    try {
+      const res = await fetch(`${API_BASE}/api/dlq/pardon`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          transaction_id: activePardonTxn.id,
+          reason: reason,
+          officer_id: "RISK_OFFICER_03"
+        })
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      
+      showToast(`Pardon Authorized: Link dispatched for ${activePardonTxn.id}`, 'success');
+      appendLogEntry(`> [MANUAL PARDON]: ${activePardonTxn.id} pardoned by officer. Reason: "${reason}"`, 'system');
+      
+      closePardonModal();
+      fetchDlqRecords();
+    } catch (err) {
+      showToast('Failed to authorize pardon.', 'error');
+    } finally {
+      confirmPardonBtn.disabled = false;
+      confirmPardonBtn.innerText = "Authorize & Force Dispatch";
     }
   });
 }

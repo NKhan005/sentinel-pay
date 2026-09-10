@@ -49,7 +49,6 @@
 
     <!-- TAB 1: Live Stream & Telemetry -->
     <section id="view-stream" class="view-panel active" role="tabpanel" aria-labelledby="tab-stream">
-      <!-- Live Indian Payment Switches & Gateway Health -->
       <section class="bank-heatmap-card" aria-label="Live Indian Payment Switches &amp; Gateway Health">
         <div class="heatmap-header">
           <span class="heatmap-title">&bull; LIVE INDIAN PAYMENT SWITCHES &amp; GATEWAY HEALTH</span>
@@ -58,7 +57,6 @@
         <div class="switch-grid" id="switchGrid" aria-label="Payment Switches"></div>
       </section>
 
-      <!-- Financial Metrics Row (Clean Zero Baseline on Initial Load) -->
       <section class="stats-row" aria-label="Financial Recovery Metrics">
         <div class="card">
           <div class="card-label">MONITORED REVENUE LOSS</div>
@@ -97,7 +95,6 @@
         </div>
       </section>
 
-      <!-- Decision Stream & Terminal -->
       <section class="grid-body">
         <div class="card card-panel">
           <div class="panel-header">
@@ -240,7 +237,7 @@
         <div class="card">
           <div class="card-label">VAULT SYNC</div>
           <div class="card-value-group">
-            <div class="value code-font" id="vaultStatus" aria-live="polite">IDLE</div>
+            <div class="value code-font" id="vaultStatus" aria-live="polite">SYNCED</div>
             <button id="refreshVaultBtn" class="btn-icon" aria-label="Refresh Quarantine Vault" title="Refresh">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
             </button>
@@ -366,6 +363,47 @@
       <div class="modal-footer">
         <button id="cancelModalBtn" class="btn btn-ghost">Cancel</button>
         <button id="approveDispatchBtn" class="btn btn-amber">Approve &amp; Dispatch</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DLQ Pardon / Force Dispatch Modal -->
+  <div id="pardonModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="pardonModalTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">
+          <h3 id="pardonModalTitle">RBI Compliance Manual Override</h3>
+          <span class="modal-txn-id" id="pardonTxnIdDisplay">txn_ind_014</span>
+        </div>
+        <button id="closePardonModalBtn" class="modal-close" aria-label="Close Modal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="pardon-warning-callout">
+          <strong>⚠️ Regulatory Anti-Harassment Override</strong>
+          <p>This transaction tripped the maximum automated retry ceiling. Overriding this policy dispatches a one-time verified payment link and records your officer ID in the RBI audit log.</p>
+        </div>
+
+        <div class="inspector-grid">
+          <div class="inspector-field">
+            <span class="field-label">Customer</span>
+            <div class="field-value" id="pardonCustomerName">-</div>
+          </div>
+          <div class="inspector-field">
+            <span class="field-label">Quarantined Value</span>
+            <div class="field-value" id="pardonAmount">-</div>
+          </div>
+        </div>
+
+        <div>
+          <label for="pardonReasonInput" class="field-label">Officer Audit Justification (Required for RBI Trail)</label>
+          <textarea id="pardonReasonInput" rows="2" class="modal-textarea" placeholder="e.g., Customer confirmed active balance via in-app support chat; authorized 1-click retry."></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button id="cancelPardonBtn" class="btn btn-ghost">Cancel</button>
+        <button id="confirmPardonBtn" class="btn btn-ruby-action">Authorize &amp; Force Dispatch</button>
       </div>
     </div>
   </div>

@@ -103,7 +103,7 @@ body {
 }
 
 /* =========================================================
-   Navbar Header Structure (Image 1, 2, 3, 4 Match)
+   Navbar Header Structure
    ========================================================= */
 .navbar {
   display: flex;
@@ -409,7 +409,7 @@ tr:hover .copy-btn, .inspector-field:hover .copy-btn { opacity: 1; }
 .trace-nudge { color: #e2e8f0; background: #0c0e12; border: 1px dashed var(--border); padding: 6px 9px; border-radius: 4px; margin-top: 5px; }
 
 /* =========================================================
-   TAB 2: Funnel & Rail Breakdown (Screenshot 2 Match)
+   TAB 2: Funnel & Rail Breakdown
    ========================================================= */
 .analytics-grid {
   display: grid;
@@ -460,6 +460,7 @@ tr:hover .copy-btn, .inspector-field:hover .copy-btn { opacity: 1; }
   transition: width 600ms var(--ease);
 }
 .w-full { width: 100%; }
+.w-zero { width: 0%; }
 .w-dispatched { width: 92%; }
 .w-stopped { width: 8%; }
 
@@ -530,7 +531,7 @@ tr:hover .copy-btn, .inspector-field:hover .copy-btn { opacity: 1; }
 .rail-val { font-family: 'JetBrains Mono', monospace; font-weight: 600; color: var(--amber); }
 
 /* =========================================================
-   TAB 3: Quarantine Vault (Screenshot 3 Match)
+   TAB 3: Quarantine Vault
    ========================================================= */
 .vault-summary-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); }
 
@@ -546,7 +547,7 @@ tr:hover .copy-btn, .inspector-field:hover .copy-btn { opacity: 1; }
 
 .vault-item {
   display: grid;
-  grid-template-columns: 1.2fr 1.1fr 1fr 2fr auto;
+  grid-template-columns: 1.1fr 1fr 0.9fr 1.8fr auto;
   align-items: center;
   gap: 16px;
   padding: 14px 18px;
@@ -561,20 +562,51 @@ tr:hover .copy-btn, .inspector-field:hover .copy-btn { opacity: 1; }
 .vault-customer { font-weight: 500; }
 .vault-amount { font-family: 'JetBrains Mono', monospace; font-weight: 600; }
 .vault-reason { color: var(--text-sub); font-size: 11px; line-height: 1.4; }
-.vault-code {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  color: var(--ruby);
-  background: var(--ruby-dim);
-  border: 1px solid rgba(244, 63, 94, 0.25);
-  border-radius: 4px;
-  padding: 4px 8px;
-  text-align: center;
+
+.btn-pardon {
+  background: var(--surface-3);
+  border: 1px solid var(--ruby);
+  color: var(--ruby) !important;
+  padding: 6px 12px;
+  font-size: 11px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all var(--dur-fast) var(--ease);
   white-space: nowrap;
+}
+.btn-pardon:hover {
+  background: var(--ruby-dim);
+  box-shadow: 0 0 10px rgba(244, 63, 94, 0.3);
+}
+
+.btn-ruby-action {
+  background: var(--ruby);
+  color: #ffffff !important;
+  border: 1px solid var(--ruby);
+}
+.btn-ruby-action:hover:not(:disabled) {
+  background: #e11d48;
+  box-shadow: 0 0 14px rgba(244, 63, 94, 0.4);
+}
+
+.pardon-warning-callout {
+  background: rgba(244, 63, 94, 0.08);
+  border: 1px solid rgba(244, 63, 94, 0.25);
+  border-radius: 6px;
+  padding: 12px 14px;
+  font-size: 12px;
+  color: #fda4af;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pardon-warning-callout strong {
+  color: #fff;
 }
 
 /* =========================================================
-   TAB 4: Policy & Circuit Breakers (Screenshot 4 Match)
+   TAB 4: Policy & Circuit Breakers
    ========================================================= */
 .policy-wrapper-card {
   min-height: 520px;
@@ -659,7 +691,7 @@ tr:hover .copy-btn, .inspector-field:hover .copy-btn { opacity: 1; }
 .policy-select:focus { border-color: var(--border-amber); }
 
 /* =========================================================
-   HITL Modal & Toasts
+   Modals & Toasts
    ========================================================= */
 .modal-backdrop {
   position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
@@ -719,8 +751,6 @@ tr:hover .copy-btn, .inspector-field:hover .copy-btn { opacity: 1; }
 .empty-state { text-align: center; padding: 40px 20px; color: var(--text-sub); }
 .empty-state svg { width: 40px; height: 40px; opacity: 0.6; margin-bottom: 8px; }
 .empty-title { color: var(--text-muted); font-weight: 600; font-size: 13px; display: block; }
-.error-state { text-align: center; padding: 30px; }
-.error-state svg { width: 32px; height: 32px; color: var(--ruby); margin-bottom: 8px; }
 
 @media (max-width: 1180px) {
   .grid-body, .analytics-grid { grid-template-columns: 1fr; }
@@ -731,6 +761,6 @@ tr:hover .copy-btn, .inspector-field:hover .copy-btn { opacity: 1; }
   .stats-row { grid-template-columns: repeat(2, 1fr); }
   .switch-grid { grid-template-columns: repeat(3, 1fr); }
   .top-deck { flex-direction: column; align-items: stretch; }
-  .vault-item { grid-template-columns: 1fr 1fr; row-gap: 6px; }
-  .vault-code { grid-column: 1 / -1; text-align: left; }
+  .vault-item { grid-template-columns: 1fr 1fr; row-gap: 8px; }
+  .btn-pardon { grid-column: 1 / -1; width: 100%; text-align: center; }
 }

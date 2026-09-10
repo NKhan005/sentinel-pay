@@ -180,6 +180,28 @@ def get_dlq_records():
         "records": records
     }
 
+@app.post("/api/dlq/pardon")
+def pardon_quarantined_transaction(payload: dict):
+    txn_id = payload.get("transaction_id")
+    reason = payload.get("reason", "Merchant verified customer authorization.")
+    officer_id = payload.get("officer_id", "MERCHANT_ADMIN_PROT3")
+    
+    if not txn_id:
+        raise HTTPException(status_code=400, detail="Missing transaction_id")
+        
+    result = dlq_manager.pardon_transaction(txn_id=txn_id, officer_reason=reason, officer_id=officer_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Transaction not found in Quarantine Vault")
+        
+    # Append trace to idempotency store as well
+    IDEMPOTENCY_STORE[f"pardon_{txn_id}"] = result
+    
+    return {
+        "status": "success",
+        "message": f"Transaction {txn_id} successfully pardoned and queued for manual payment link dispatch.",
+        "pardoned_record": result
+    }
+
 @app.post("/api/hitl-override")
 def hitl_override(override_data: dict):
     txn_id = override_data.get("transaction_id")

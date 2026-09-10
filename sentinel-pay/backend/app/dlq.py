@@ -20,6 +20,7 @@ class DeadLetterQueueManager:
                 "customer_phone": "+919876543224",
                 "amount": 1499.00,
                 "payment_method": "upi",
+                "triage_code": "DLQ_MAX_RETRIES_EXCEEDED",
                 "quarantine_reason": "Exceeded maximum automated retry ceiling (3). Enforced anti-harassment stopping rule.",
                 "quarantined_at": "2026-09-08T10:14:00Z",
                 "status": "QUARANTINED"
@@ -30,6 +31,7 @@ class DeadLetterQueueManager:
                 "customer_phone": "+919876543233",
                 "amount": 999.00,
                 "payment_method": "card",
+                "triage_code": "DLQ_MAX_RETRIES_EXCEEDED",
                 "quarantine_reason": "Exceeded maximum automated retry ceiling (3). Enforced anti-harassment stopping rule.",
                 "quarantined_at": "2026-09-08T10:18:20Z",
                 "status": "QUARANTINED"
@@ -40,6 +42,7 @@ class DeadLetterQueueManager:
                 "customer_phone": "+919876543246",
                 "amount": 499.00,
                 "payment_method": "upi",
+                "triage_code": "DLQ_MAX_RETRIES_EXCEEDED",
                 "quarantine_reason": "Exceeded maximum automated retry ceiling (3). Enforced anti-harassment stopping rule.",
                 "quarantined_at": "2026-09-08T10:22:11Z",
                 "status": "QUARANTINED"
@@ -50,6 +53,7 @@ class DeadLetterQueueManager:
                 "customer_phone": "+919876543260",
                 "amount": 499.00,
                 "payment_method": "netbanking",
+                "triage_code": "DLQ_MAX_RETRIES_EXCEEDED",
                 "quarantine_reason": "Exceeded maximum automated retry ceiling (3). Enforced anti-harassment stopping rule.",
                 "quarantined_at": "2026-09-08T10:29:45Z",
                 "status": "QUARANTINED"
@@ -57,10 +61,6 @@ class DeadLetterQueueManager:
         }
 
     def push(self, record_dict: Optional[Dict] = None, **kwargs) -> None:
-        """
-        Accepts records either as a dictionary or as keyword arguments
-        e.g. dlq_manager.push(transaction_id="...", customer_name="...", ...)
-        """
         data = dict(record_dict) if record_dict else {}
         data.update(kwargs)
 
@@ -69,17 +69,16 @@ class DeadLetterQueueManager:
             return
 
         self._quarantined_records[txn_id] = {
+            "triage_code": data.get("triage_code", "DLQ_MAX_RETRIES_EXCEEDED"),
             **data,
             "quarantined_at": data.get("quarantined_at") or (datetime.utcnow().isoformat() + "Z"),
-            "status": "QUARANTINED"
+            "status": data.get("status", "QUARANTINED")
         }
 
     def isolate(self, record_dict: Optional[Dict] = None, **kwargs) -> None:
-        """Alias for push to maintain backward compatibility."""
         self.push(record_dict, **kwargs)
 
     def clear(self) -> None:
-        """Reset the quarantine store to empty for test isolation."""
         self._quarantined_records.clear()
         self._pardon_audit_log.clear()
 
@@ -96,7 +95,7 @@ class DeadLetterQueueManager:
             "officer_id": officer_id,
             "officer_reason": officer_reason,
             "pardoned_at": datetime.utcnow().isoformat() + "Z",
-            "dispatch_link": f"https://rzp.io/i/pardon_{txn_id[-6:]}"
+            "dispatch_link": f"https://rzp.io/i/pardon_{str(txn_id)[-6:]}"
         }
         self._pardon_audit_log.append(pardon_entry)
         return {**pardoned_item, **pardon_entry, "status": "FORCE_DISPATCHED"}

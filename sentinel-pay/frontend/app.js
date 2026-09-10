@@ -106,6 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderSwitchPlaceholders();
   fetchBankHealth();
   fetchDlqRecords();
+  fetchComplianceHealth();
 });
 
 function renderSwitchPlaceholders() {
@@ -159,6 +160,28 @@ async function fetchBankHealth() {
   }
 }
 
+/* Compliance Health Index */
+async function fetchComplianceHealth() {
+  try {
+    const res = await fetch(`${API_BASE}/api/compliance-health-index`);
+    if (!res.ok) return;
+    const data = await res.json();
+
+    const scoreEl = document.getElementById('complianceScore');
+    const gradeEl = document.getElementById('complianceGrade');
+    const subEl = document.getElementById('complianceSub');
+
+    if (scoreEl) scoreEl.innerText = `${data.composite_score}%`;
+    if (gradeEl) {
+      gradeEl.innerText = `GRADE ${data.grade}`;
+      gradeEl.className = `delta ${data.grade.startsWith('A') ? 'positive' : 'neutral'}`;
+    }
+    if (subEl) subEl.innerText = `${data.metrics.anti_harassment_adherence} Adherence`;
+  } catch (err) {
+    console.warn("Compliance health index offline, using default score.");
+  }
+}
+
 /* Chaos Mode */
 const chaosPill = document.getElementById('chaosToggleBtn');
 if (chaosPill) {
@@ -200,6 +223,7 @@ if (runBatchBtn) {
       if (statusEl) statusEl.innerText = "ACTIVE";
       showToast(`Batch processed: ${data.length} transactions processed.`, 'success');
       fetchDlqRecords();
+      fetchComplianceHealth();
     } catch (err) {
       showToast('Could not reach backend on localhost:8000.', 'error');
       if (statusEl) statusEl.innerText = "STANDBY";
@@ -252,6 +276,7 @@ if (simulateWebhookBtn) {
         if (decision.stopping_rule_applied) {
           fetchDlqRecords();
         }
+        fetchComplianceHealth();
       } else {
         showToast('Webhook processed.', 'info');
       }
@@ -265,7 +290,7 @@ if (simulateWebhookBtn) {
   });
 }
 
-/* Dashboard Renderer */
+/* Dashboard Renderer with Cascading Fallback Column */
 function renderDashboard(records, prependOnly = false) {
   let totalLoss = 0;
   let recoverable = 0;
@@ -293,6 +318,10 @@ function renderDashboard(records, prependOnly = false) {
     if (rec.action === 'HARD_STOP') badgeClass = 'badge-stop';
     if (rec.action === 'ALTERNATIVE_UPI_NUDGE') badgeClass = 'badge-nudge';
 
+    const fallbackRoute = rec.action === 'SMART_RETRY'
+      ? ((rec.payment_method || '').toLowerCase() === 'upi' ? 'NPCI Direct' : 'IMPS Rail')
+      : (rec.action === 'ALTERNATIVE_UPI_NUDGE' ? 'UPI AutoPay' : 'Primary');
+
     const row = document.createElement('tr');
     row.setAttribute('tabindex', '0');
     row.innerHTML = `
@@ -308,6 +337,7 @@ function renderDashboard(records, prependOnly = false) {
       <td class="cell-amount">₹${rec.original_amount.toFixed(2)}</td>
       <td class="cell-category">${rec.category}</td>
       <td><span class="badge ${badgeClass}">${rec.action}</span></td>
+      <td><span class="badge-fallback">${fallbackRoute}</span></td>
       <td class="cell-confidence">${(rec.confidence_score * 100).toFixed(0)}%</td>
     `;
 
@@ -569,12 +599,13 @@ if (confirmPardonBtn) {
       });
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      
+
       showToast(`Pardon Authorized: Link dispatched for ${activePardonTxn.id}`, 'success');
       appendLogEntry(`> [MANUAL PARDON]: ${activePardonTxn.id} pardoned by officer. Reason: "${reason}"`, 'system');
-      
+
       closePardonModal();
       fetchDlqRecords();
+      fetchComplianceHealth();
     } catch (err) {
       showToast('Failed to authorize pardon.', 'error');
     } finally {

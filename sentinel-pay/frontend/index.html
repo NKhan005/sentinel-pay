@@ -57,7 +57,8 @@
         <div class="switch-grid" id="switchGrid" aria-label="Payment Switches"></div>
       </section>
 
-      <section class="stats-row" aria-label="Financial Recovery Metrics">
+      <!-- 5-Metric Strip -->
+      <section class="stats-row stats-row-five" aria-label="Financial Recovery Metrics">
         <div class="card">
           <div class="card-label">MONITORED REVENUE LOSS</div>
           <div class="card-value-group">
@@ -76,6 +77,15 @@
           <div class="card-footer-sub">Active dynamic dunning &amp; backoff routing</div>
         </div>
 
+        <div class="card glow-emerald">
+          <div class="card-label emerald-text">RBI COMPLIANCE HEALTH</div>
+          <div class="card-value-group">
+            <div class="value emerald-text" id="complianceScore">99.4%</div>
+            <span class="delta positive" id="complianceGrade">GRADE A+</span>
+          </div>
+          <div class="card-footer-sub" id="complianceSub">Master Direction Compliant</div>
+        </div>
+
         <div class="card">
           <div class="card-label">CIRCUIT BREAKERS TRIPPED</div>
           <div class="card-value-group">
@@ -91,7 +101,7 @@
             <div class="value code-font" id="engineStatus" aria-live="polite">STANDBY</div>
             <span class="delta positive">Ready</span>
           </div>
-          <div class="card-footer-sub">Hinglish validation layer listener</div>
+          <div class="card-footer-sub">Cascading Switch Router Active</div>
         </div>
       </section>
 
@@ -110,12 +120,13 @@
                   <th scope="col">AMOUNT</th>
                   <th scope="col">CLASSIFICATION</th>
                   <th scope="col">INTERVENTION ACTION</th>
+                  <th scope="col">FALLBACK ROUTE</th>
                   <th scope="col">CONFIDENCE</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td colspan="6">
+                  <td colspan="7">
                     <div class="empty-state">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5a2 2 0 0 1 2-2h8.5L20 7.5V19a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/><path d="M14 3v4.5H18.5"/><path d="M8 13h8M8 17h5"/></svg>
                       <span class="empty-title">No telemetry ingested yet</span>

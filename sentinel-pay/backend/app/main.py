@@ -3,6 +3,7 @@ import csv
 import io
 import hmac
 import hashlib
+import json
 from fastapi import FastAPI, HTTPException, Request, Response, Header
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -74,8 +75,7 @@ def run_batch():
     data_path = next((p for p in candidate_paths if os.path.exists(p)), None)
     if not data_path:
         raise HTTPException(status_code=404, detail="synthetic_failures_100.json not found")
-    
-    import json
+
     with open(data_path, "r", encoding="utf-8") as f:
         raw_data = json.load(f)
 
@@ -89,18 +89,24 @@ def run_batch():
 @app.post("/api/webhook/razorpay")
 async def ingest_webhook(request: Request, x_razorpay_signature: str = Header(None, alias="X-Razorpay-Signature")):
     raw_body = await request.body()
-    if not x_razorpay_signature:
+    
+    # Check signature header
+    sig = x_razorpay_signature or request.headers.get("x-razorpay-signature") or request.headers.get("X-Razorpay-Signature")
+    if not sig:
         raise HTTPException(status_code=401, detail="Missing X-Razorpay-Signature header")
 
-    if x_razorpay_signature != "mock_test_signature":
+    if sig != "mock_test_signature":
         expected_sig = hmac.new(WEBHOOK_SECRET.encode("utf-8"), raw_body, hashlib.sha256).hexdigest()
-        if not hmac.compare_digest(expected_sig, x_razorpay_signature):
+        if not hmac.compare_digest(expected_sig, sig):
             raise HTTPException(status_code=401, detail="Cryptographic HMAC Signature Mismatch")
 
-    import json
-    payload = json.loads(raw_body.decode("utf-8"))
+    try:
+        payload = json.loads(raw_body.decode("utf-8")) if raw_body else {}
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
+
     payment_entity = payload.get("payload", {}).get("payment", {}).get("entity", {})
-    payment_id = payment_entity.get("id", f"txn_mock_{hash(raw_body)}")
+    payment_id = payment_entity.get("id", f"txn_mock_{abs(hash(raw_body))}")
 
     if payment_id in IDEMPOTENCY_STORE:
         return {
@@ -109,15 +115,51 @@ async def ingest_webhook(request: Request, x_razorpay_signature: str = Header(No
             "decision": IDEMPOTENCY_STORE[payment_id]
         }
 
+    raw_amt = float(payment_entity.get("amount", 349900))
+    amount_inr = raw_amt / 100.0 if raw_amt > 1000 else raw_amt
+
     record = TransactionRecord(
         transaction_id=payment_id,
         customer_name=payment_entity.get("notes", {}).get("customer_name", "Valued Customer"),
         customer_phone=payment_entity.get("contact", "+919876543210"),
-        amount=float(payment_entity.get("amount", 0)) / 100.0,
+        amount=amount_inr,
         payment_method=payment_entity.get("method", "upi"),
         error_code=payment_entity.get("error_code", "UNKNOWN_FAIL"),
         error_description=payment_entity.get("error_description", "Payment gateway generic failure"),
         retry_count=int(payment_entity.get("notes", {}).get("retry_count", 0)),
+        timestamp="2026-08-22T14:00:00Z"
+    )
+
+    decision = SentinelRecoveryEngine.evaluate(record)
+    IDEMPOTENCY_STORE[payment_id] = decision.dict()
+
+    return {
+        "status": "processed",
+        "cached": False,
+        "decision": decision.dict()
+    }
+
+@app.post("/api/simulate-webhook")
+async def simulate_webhook(request: Request):
+    try:
+        payload = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON")
+
+    entity = payload.get("payload", {}).get("payment", {}).get("entity", payload)
+    payment_id = entity.get("id") or entity.get("transaction_id") or f"pay_live_{abs(hash(str(payload))) % 100000}"
+    raw_amt = float(entity.get("amount", 3499.0))
+    amount_inr = raw_amt / 100.0 if raw_amt > 10000 else raw_amt
+
+    record = TransactionRecord(
+        transaction_id=payment_id,
+        customer_name=entity.get("notes", {}).get("customer_name") or entity.get("customer_name", "Sneha Kulkarni"),
+        customer_phone=entity.get("contact") or entity.get("customer_phone", "+919876543210"),
+        amount=amount_inr,
+        payment_method=entity.get("method") or entity.get("payment_method", "upi"),
+        error_code=entity.get("error_code", "ISSUER_BANK_TIMEOUT"),
+        error_description=entity.get("error_description", "NPCI switch timeout"),
+        retry_count=int(entity.get("notes", {}).get("retry_count") or entity.get("retry_count", 0)),
         timestamp="2026-08-22T14:00:00Z"
     )
 
@@ -156,7 +198,6 @@ def export_audit_csv():
     if not data_path:
         raise HTTPException(status_code=404, detail="Audit dataset not found")
 
-    import json
     with open(data_path, "r", encoding="utf-8") as f:
         raw_data = json.load(f)
 
